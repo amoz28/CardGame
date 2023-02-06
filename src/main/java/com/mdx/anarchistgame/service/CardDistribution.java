@@ -12,6 +12,15 @@ import java.util.*;
 @Component
 public class CardDistribution implements CommandLineRunner {
 
+  public static final String RESET = "\u001B[0m";
+  public static final String BLACK = "\u001B[30m";
+  public static final String RED = "\u001B[31m";
+  public static final String GREEN = "\u001B[32m";
+  public static final String YELLOW = "\u001B[33m";
+  public static final String BLUE = "\u001B[34m";
+  public static final String PURPLE = "\u001B[35m";
+  public static final String CYAN = "\u001B[36m";
+  public static final String WHITE = "\u001B[37m";
   private List<Card> deckTemp;
   List<String> deck = new ArrayList<>();
   List<List<String>> dealtCards = new ArrayList<>();
@@ -23,21 +32,21 @@ public class CardDistribution implements CommandLineRunner {
   @Override
   public void run(String... args) throws Exception {
 
-    GenerateCardDeck();
+    GenerateCardDeck(); //Abubakar
 
-    Collections.shuffle(deck);
+    Collections.shuffle(deck); //Abubakar
 
-    dealCardsToPlayers();
+    dealCardsToPlayers(); //Amos
 
     //TODO: Players Annouces their Bid
-    playersAnnouncesBid();
-    playTrick();
+    playersAnnouncesBid();  // Amos
+    playTrick(); // Zeeshan
 
     Map<String, List<Map<String, Object>>> newObj = new HashMap<>();
     for (Map.Entry<Integer, String> entry : playedTricks.entrySet()) {
       int player = entry.getKey();
       String trick = entry.getValue();
-      String[] suit = trick.split(" of ");
+      String[] suit = trick.split("");
       System.out.println(suit[1]);
       if (newObj.containsKey(suit[1])) {
         List<Map<String, Object>> tricks = newObj.get(suit[1]);
@@ -68,43 +77,60 @@ public class CardDistribution implements CommandLineRunner {
       Collections.sort(tricks, new Comparator<Map<String, Object>>() {
         @Override
         public int compare(Map<String, Object> m1, Map<String, Object> m2) {
-          Integer name1 = Integer.valueOf(String.valueOf(m1.get("trickPlayed")));
-          Integer name2 = Integer.valueOf(String.valueOf(m2.get("trickPlayed")));
-          return name2.compareTo(name1);
+          int rank = 0;
+          String value = "";
+          var m1Rank = getRank((String) m1.get("trickPlayed"));
+          var m2Rank = getRank((String) m2.get("trickPlayed"));
+          return m2Rank.compareTo(m1Rank);
         }
       });
 
-//      tricks.sort((a, b) -> (int) b.get("trickPlayed") - (int) a.get("trickPlayed"));
     }
 
     System.out.println(newObj);
+  }
 
-
-//    Map<Suit, Map<String,String>> suitsPlayed = new HashMap<>();
-//    playedTricks.forEach((player, playedTrick) -> {
-//      System.out.println("Player: " + player + " Played trick: " + playedTrick);
-//      var tricksArray = playedTrick.split(" of ");
-//      Map<String, String> players = new HashMap<>();
-//      players.put(String.valueOf(player), tricksArray[0]);
-////      System.out.println("Test "+tricksArray[0] +" == "+tricksArray[1]);
-//      suitsPlayed.put(Suit.valueOf(tricksArray[1]), players);
-//    });
-////    for (String playedTrick : playedTricks.values()) {
-////      Map<String, String> player = new HashMap<>();
-////      var tricksArray = playedTrick.split(" of ");
-////      System.out.println("Test "+tricksArray[0] +" == "+tricksArray[1]);
-//////      suitsPlayed.put(Suit.valueOf(tricksArray[1]), tricksArray[0]);
-//////      suitsPlayed.pu
-////    }
-//    System.out.println("Players "+suitsPlayed);
+  private static Integer getRank(String value) {
+    int rank;
+    switch(value) {
+      case "J" :
+        rank = 11;
+        break;
+      case "Q" :
+        rank = 12;
+        break;
+      case "K" :
+        rank = 13;
+        break;
+      case "A" :
+        rank = 14;
+        break;
+      default :
+        rank = Integer.valueOf(value);
+        break;
+    }
+    return rank;
   }
 
   private void playersAnnouncesBid() {
     for (int i = 0; i < 5; i++) {
       Scanner keyboard = new Scanner(System.in);
-      System.out.println("Player "+ (i+1) +" Examin your card and Place a bid");
-      System.out.println("Enter 1 for : SPADES, 2 for :CLUBS, 3 for :DIAMONDS, 4 for :HEARTS, 5 for NO-SUIT, 6 for :MISERE");
-      int myint = keyboard.nextInt();
+      int myint = -1;
+      do {
+        System.out.println("Player "+ (i+1) +" Examin your hand and Place a bid");
+        System.out.println("HAND: "+dealtCards.get(i));
+        System.out.println("Enter 1 for : SPADES, 2 for :CLUBS, 3 for :DIAMONDS, 4 for :HEARTS, 5 for NO-SUIT, 6 for :MISERE");
+        myint = keyboard.nextInt();
+
+        System.out.println(RESET+" Player "+ (i+1) +" Play a trick  from range cards available starting from 0");
+//        cardSelected = keyboard.nextLine();
+//        indexOfTrick = dealtCards.get(i).indexOf(cardSelected);
+        if(myint < 1 || myint >5 )
+          System.out.println(RED+"==== Your BID is INVALID ====");
+        System.out.println(RESET+"====================================================================");
+
+      }while(myint < 1 || myint >5);
+      
       String bid="";
       switch (myint) {
         case (1) :
@@ -130,20 +156,30 @@ public class CardDistribution implements CommandLineRunner {
 
       }
       playerBid.put(i + 1, bid);
+      System.out.println(BLUE+"Player "+(i+1) + " Bids "+bid);
+      System.out.println(RESET+"====================================================================");
     }
   }
 
   private void playTrick() {
     for (int i = 0; i < 5; i++) {
-      System.out.println("Val "+ dealtCards.get(i));
+      System.out.println(GREEN+"HAND: "+ dealtCards.get(i));
       Scanner keyboard = new Scanner(System.in);
-      System.out.println("Player "+ (i+1) +" Play a trick  from range cards available starting from 0");
-      int myint = keyboard.nextInt();
-      System.out.println("Card Selected "+ dealtCards.get(i).get(myint));
+      var indexOfTrick =-1;
+      String cardSelected = "";
+
+      do {
+        System.out.println(GREEN+" Player "+ (i+1) +" Play a trick  from range cards available starting from 0");
+        cardSelected = keyboard.nextLine();
+        indexOfTrick = dealtCards.get(i).indexOf(cardSelected);
+        if(indexOfTrick<0)
+          System.out.println(RED+"==== Your trick is INVALID, please select from your available deck ====");
+      }while(indexOfTrick < 0);
+      System.out.println(RESET+"Card Selected "+ dealtCards.get(i).indexOf(cardSelected));
 //      Add the card selected to the list of played tricks
-      playedTricks.put((i+1), dealtCards.get(i).get(myint));
+      playedTricks.put((i+1), dealtCards.get(i).get(indexOfTrick));
 //      Remove the played trick
-      dealtCards.get(i).remove(myint);
+      dealtCards.get(i).remove(indexOfTrick);
       System.out.println("Card Selected "+ dealtCards.get(i));
     }
     System.out.println("Played tricks: "+playedTricks);
@@ -168,7 +204,7 @@ public class CardDistribution implements CommandLineRunner {
   private void GenerateCardDeck() {
     for (Suit suit : Suit.values()) {
       for (Rank rank : Rank.values()) {
-        deck.add(rank.getName() + " of " + suit.getName());
+        deck.add(String.valueOf(rank.getName().charAt(0)  +""+ suit.getName().charAt(0)));
       }
     }
   }
