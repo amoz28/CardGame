@@ -86,7 +86,13 @@ public class CardDistribution implements CommandLineRunner {
       });
 
     }
-
+    newObj.forEach((suit, tricks) -> {
+      System.out.println("Suit = "+suit);
+      System.out.println("Tricks = "+tricks);
+      var highestTrickPlayer = Integer.valueOf(String.valueOf(tricks.get(0).get("player")));
+      var highestTrick = String.valueOf(tricks.get(0).get("trickPlayed"));
+      System.out.println("Player "+highestTrickPlayer+  " captures "+suit+" Suit Played with a "+ highestTrick);
+    });
     System.out.println(newObj);
   }
 
