@@ -9,18 +9,12 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
+import static com.mdx.anarchistgame.dto.Color.*;
+
 @Component
 public class CardDistribution implements CommandLineRunner {
 
-  public static final String RESET = "\u001B[0m";
-  public static final String BLACK = "\u001B[30m";
-  public static final String RED = "\u001B[31m";
-  public static final String GREEN = "\u001B[32m";
-  public static final String YELLOW = "\u001B[33m";
-  public static final String BLUE = "\u001B[34m";
-  public static final String PURPLE = "\u001B[35m";
-  public static final String CYAN = "\u001B[36m";
-  public static final String WHITE = "\u001B[37m";
+
   private List<Card> deckTemp;
   List<String> deck = new ArrayList<>();
   List<List<String>> dealtCards = new ArrayList<>();
@@ -28,6 +22,8 @@ public class CardDistribution implements CommandLineRunner {
   Map<Integer, String> playedTricks = new HashMap<>();
 
   Map<Integer, String> playerBid = new HashMap<>();
+
+  List<List<String>> capturedCards = new ArrayList<>();
 
   @Override
   public void run(String... args) throws Exception {
@@ -129,8 +125,6 @@ public class CardDistribution implements CommandLineRunner {
         myint = keyboard.nextInt();
 
         System.out.println(RESET+" Player "+ (i+1) +" Play a trick  from range cards available starting from 0");
-//        cardSelected = keyboard.nextLine();
-//        indexOfTrick = dealtCards.get(i).indexOf(cardSelected);
         if(myint < 1 || myint >5 )
           System.out.println(RED+"==== Your BID is INVALID ====");
         System.out.println(RESET+"====================================================================");
