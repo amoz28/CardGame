@@ -58,7 +58,7 @@ public class CardDistribution implements CommandLineRunner {
     Map<Integer, List<Map<String, Object>>> capturedCards = new HashMap<>();
 
     for (int i = 0; i < 5; i++) {
-      capturedCards.put(i + 1, new ArrayList<>());
+      capturedCards.put(i + 1, new ArrayList<>()); 
     }
     System.out.println(" Cards played "+newObj);
     for (Map.Entry<String, List<Map<String, Object>>> entry : newObj.entrySet()) {
