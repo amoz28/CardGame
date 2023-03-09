@@ -9,7 +9,7 @@ import java.util.*;
 import static com.mdx.anarchistgame.dto.Color.*;
 
 @Component
-public class CardDistribution implements CommandLineRunner {
+public class CardDistribution {
 
 
   private List<Card> deckTemp;
@@ -24,7 +24,6 @@ public class CardDistribution implements CommandLineRunner {
 
   Map<Integer, Integer> scores = new HashMap<>();
 
-  @Override
   public void run(String... args) throws Exception {
 
     GenerateCardDeck(); //Abubakar
@@ -95,7 +94,7 @@ public class CardDistribution implements CommandLineRunner {
     calculateScores();
   }
 
-  private void calculateScores() {
+  public void calculateScores() {
     int winner = 1;
     int maxScore = 0;
     for (int i = 1; i < 6; i += 1) {
@@ -160,7 +159,7 @@ public class CardDistribution implements CommandLineRunner {
 
   }
 
-  private static String getFullSuit(String value) {
+  public static String getFullSuit(String value) {
     switch (value) {
       case "S":
         return Bid.SPADES.name();
@@ -174,7 +173,7 @@ public class CardDistribution implements CommandLineRunner {
     return null;
   }
 
-  private static Integer getRank(String value) {
+  public static Integer getRank(String value) {
     int rank;
     switch(value) {
       case "J" :
@@ -268,7 +267,7 @@ public class CardDistribution implements CommandLineRunner {
     System.out.println("Played tricks: "+playedTricks);
   }
 
-  private void dealCardsToPlayers() {
+  public List<List<String>> dealCardsToPlayers() {
     int remainingCards = deck.size() % 5;
     for (int i = 0; i < 5; i++) {
       dealtCards.add(new ArrayList<>());
@@ -282,13 +281,18 @@ public class CardDistribution implements CommandLineRunner {
         undealtCards.add(deck.get(i));
       }
     }
+
+    return dealtCards;
   }
 
-  private void GenerateCardDeck() {
+  public List<String> GenerateCardDeck() {
     for (Suit suit : Suit.values()) {
       for (Rank rank : Rank.values()) {
-        deck.add(String.valueOf(rank.getName().charAt(0)  +""+ suit.getName().charAt(0)));
+        var rankId = rank.getName() == "10" ? rank.getName() : rank.getName().charAt(0);
+        deck.add(String.valueOf(rankId  +""+ suit.getName().charAt(0)));
       }
     }
+
+    return deck;
   }
 }
