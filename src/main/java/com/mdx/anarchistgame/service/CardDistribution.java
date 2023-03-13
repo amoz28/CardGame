@@ -14,15 +14,15 @@ public class CardDistribution {
 
   private List<Card> deckTemp;
   List<String> deck = new ArrayList<>();
-  List<List<String>> dealtCards = new ArrayList<>();
-  List<String> undealtCards = new ArrayList<>();
-  Map<Integer, String> playedTricks = new HashMap<>();
+  public List<List<String>> dealtCards = new ArrayList<>();
+  public List<String> undealtCards = new ArrayList<>();
+  public Map<Integer, String> playedTricks = new HashMap<>();
 
-  Map<Integer, String> playersBids = new HashMap<>();
+  public Map<Integer, String> playersBids = new HashMap<>();
 
-  Map<Integer, List<Map<String, Object>>> capturedCards = new HashMap<>();
+  public Map<Integer, List<Map<String, Object>>> capturedCards = new HashMap<>();
 
-  Map<Integer, Integer> scores = new HashMap<>();
+  public Map<Integer, Integer> scores = new HashMap<>();
 
   public void run(String... args) throws Exception {
 
@@ -38,60 +38,81 @@ public class CardDistribution {
     for (int k = 0; k < 1; k += 1) {
       playTrick(); // Zeeshan
 
-      Map<String, List<Map<String, Object>>> newObj = new HashMap<>();
-      for (Map.Entry<Integer, String> entry : playedTricks.entrySet()) {
-        int player = entry.getKey();
-        String trick = entry.getValue();
-        String[] suit = trick.split("");
-        System.out.println(suit[1]);
-        if (newObj.containsKey(suit[1])) {
-          List<Map<String, Object>> tricks = newObj.get(suit[1]);
-          Map<String, Object> trickData = new HashMap<>();
-          trickData.put("player", player);
-          trickData.put("trickPlayed", suit[0]);
-          trickData.put("suit", getFullSuit(suit[1]));
-          tricks.add(trickData);
-        } else {
-          List<Map<String, Object>> tricks = new ArrayList<>();
-          Map<String, Object> trickData = new HashMap<>();
-          trickData.put("player", player);
-          trickData.put("trickPlayed", suit[0]);
-          trickData.put("suit", getFullSuit(suit[1]));
-          tricks.add(trickData);
-          newObj.put(suit[1], tricks);
-        }
-      }
-
-      for (int i = 0; i < 5; i++) {
-        capturedCards.put(i + 1, new ArrayList<>());
-      }
-      System.out.println(" Cards played " + newObj);
-      for (Map.Entry<String, List<Map<String, Object>>> entry : newObj.entrySet()) {
-        List<Map<String, Object>> tricks = entry.getValue();
-
-        Collections.sort(tricks, new Comparator<Map<String, Object>>() {
-          @Override
-          public int compare(Map<String, Object> m1, Map<String, Object> m2) {
-            int rank = 0;
-            String value = "";
-            var m1Rank = getRank((String) m1.get("trickPlayed"));
-            var m2Rank = getRank((String) m2.get("trickPlayed"));
-            return m2Rank.compareTo(m1Rank);
-          }
-        });
-
-      }
-      newObj.forEach((suit, tricks) -> {
-        System.out.println("Suit = " + suit);
-        System.out.println("Tricks = " + tricks);
-        var highestTrickPlayer = Integer.valueOf(String.valueOf(tricks.get(0).get("player")));
-        var highestTrick = String.valueOf(tricks.get(0).get("trickPlayed"));
-        capturedCards.get(highestTrickPlayer).addAll(tricks);
-        System.out.println("Player " + highestTrickPlayer + " captures " + suit + " Suit Played with a " + highestTrick);
-      });
+      captureCards();
     }
     System.out.println(capturedCards);
     calculateScores();
+  }
+
+  public void captureCards() {
+    Map<String, List<Map<String, Object>>> newObj = new HashMap<>();
+    for (Map.Entry<Integer, String> entry : playedTricks.entrySet()) {
+      int player = entry.getKey();
+      String trick = entry.getValue();
+      String rank = trick.substring(0, trick.length() - 1);
+      String suit = trick.substring(trick.length() - 1);
+      System.out.println(suit);
+      if (newObj.containsKey(suit)) {
+        List<Map<String, Object>> tricks = newObj.get(suit);
+        Map<String, Object> trickData = new HashMap<>();
+        trickData.put("player", player);
+        trickData.put("trickPlayed", rank);
+//        trickData.put("suit", getFullSuit(suit));
+        trickData.put("suit", suit);
+        tricks.add(trickData);
+      } else {
+        List<Map<String, Object>> tricks = new ArrayList<>();
+        Map<String, Object> trickData = new HashMap<>();
+        trickData.put("player", player);
+        trickData.put("trickPlayed", rank);
+//        trickData.put("suit", getFullSuit(suit));
+        trickData.put("suit", suit);
+        tricks.add(trickData);
+        newObj.put(suit, tricks);
+      }
+    }
+
+    for (int i = 0; i < 5; i++) {
+      capturedCards.put(i + 1, new ArrayList<>());
+    }
+    System.out.println(" Cards played " + newObj);
+    for (Map.Entry<String, List<Map<String, Object>>> entry : newObj.entrySet()) {
+      List<Map<String, Object>> tricks = entry.getValue();
+
+      Collections.sort(tricks, new Comparator<Map<String, Object>>() {
+        @Override
+        public int compare(Map<String, Object> m1, Map<String, Object> m2) {
+          int rank = 0;
+          String value = "";
+          var m1Rank = getRank((String) m1.get("trickPlayed"));
+          var m2Rank = getRank((String) m2.get("trickPlayed"));
+          return m2Rank.compareTo(m1Rank);
+        }
+      });
+
+    }
+    newObj.forEach((suit, tricks) -> {
+      System.out.println("Suit = " + suit);
+      System.out.println("Tricks = " + tricks);
+      var highestTrickPlayer = Integer.valueOf(String.valueOf(tricks.get(0).get("player")));
+      var highestTrick = String.valueOf(tricks.get(0).get("trickPlayed"));
+
+      if (highestTrickPlayer == 6) {
+        if (tricks.size() == 1) {
+          // Undealt card is not captured, so push it back to undealt cards list
+          undealtCards.add(tricks.get(0).get("trickPlayed") + suit);
+        } else {
+          // undealt card captures the suit, so award to next highest player
+          highestTrickPlayer = Integer.valueOf(String.valueOf(tricks.get(1).get("player")));
+          highestTrick = String.valueOf(tricks.get(1).get("trickPlayed"));
+
+          capturedCards.get(highestTrickPlayer).addAll(tricks);
+        }
+      } else {
+        capturedCards.get(highestTrickPlayer).addAll(tricks);
+      }
+      System.out.println("Player " + highestTrickPlayer + " captures " + suit + " Suit Played with a " + highestTrick);
+    });
   }
 
   public void calculateScores() {
