@@ -1,7 +1,6 @@
 package com.mdx.anarchistgame.service;
 
 import com.mdx.anarchistgame.dto.*;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -10,6 +9,16 @@ import static com.mdx.anarchistgame.dto.Color.*;
 
 @Component
 public class CardDistribution {
+
+  public void resetGame() {
+    deck = new ArrayList<>();
+    dealtCards = new ArrayList<>();
+    undealtCards = new ArrayList<>();
+    playedTricks = new HashMap<>();
+    playersBids = new HashMap<>();
+    capturedCards = new HashMap<>();
+    scores = new HashMap<>();
+  }
 
 
   private List<Card> deckTemp;
@@ -20,17 +29,17 @@ public class CardDistribution {
 
   public Map<Integer, String> playersBids = new HashMap<>();
 
-  public Map<Integer, List<Map<String, Object>>> capturedCards = new HashMap<>();
+  public Map<Integer, Map<Integer, List<Map<String, Object>>>> capturedCards = new HashMap<>();
 
   public Map<Integer, Integer> scores = new HashMap<>();
 
   public void run(String... args) throws Exception {
 
-    GenerateCardDeck(); //Abubakar
+//    GenerateCardDeck(); //Abubakar
 
     Collections.shuffle(deck); //Abubakar
 
-    dealCardsToPlayers(); //Amos
+//    dealCardsToPlayers(); //Amos
 
     //TODO: Players Annouces their Bid
     playersAnnouncesBid();  // Amos
@@ -38,14 +47,15 @@ public class CardDistribution {
     for (int k = 0; k < 1; k += 1) {
       playTrick(); // Zeeshan
 
-      captureCards();
+//      captureCards();
     }
     System.out.println(capturedCards);
-    calculateScores();
+//    calculateScores();
   }
 
-  public void captureCards() {
+  public void captureCards(int round, int numberOfPlayersPlaying, String gameType, Boolean bombThrown) {
     Map<String, List<Map<String, Object>>> newObj = new HashMap<>();
+    Map<Integer, List<Map<String, Object>>> roundCapturedCards = new HashMap<>();
     for (Map.Entry<Integer, String> entry : playedTricks.entrySet()) {
       int player = entry.getKey();
       String trick = entry.getValue();
@@ -72,111 +82,213 @@ public class CardDistribution {
       }
     }
 
-    for (int i = 0; i < 5; i++) {
-      capturedCards.put(i + 1, new ArrayList<>());
+    for (int i = 0; i < numberOfPlayersPlaying; i++) {
+      roundCapturedCards.put(i + 1, new ArrayList<>());
     }
+
     System.out.println(" Cards played " + newObj);
     for (Map.Entry<String, List<Map<String, Object>>> entry : newObj.entrySet()) {
       List<Map<String, Object>> tricks = entry.getValue();
 
-      Collections.sort(tricks, new Comparator<Map<String, Object>>() {
-        @Override
-        public int compare(Map<String, Object> m1, Map<String, Object> m2) {
-          int rank = 0;
-          String value = "";
-          var m1Rank = getRank((String) m1.get("trickPlayed"));
-          var m2Rank = getRank((String) m2.get("trickPlayed"));
-          return m2Rank.compareTo(m1Rank);
-        }
-      });
+      sortTricks(tricks);
+
+      // If bomb has been thrown, reverse the capturing order
+      if (bombThrown) {
+        Collections.reverse(tricks);
+      }
 
     }
+    List<Map<String, Object>> singleTons = new ArrayList<>();
     newObj.forEach((suit, tricks) -> {
       System.out.println("Suit = " + suit);
       System.out.println("Tricks = " + tricks);
       var highestTrickPlayer = Integer.valueOf(String.valueOf(tricks.get(0).get("player")));
       var highestTrick = String.valueOf(tricks.get(0).get("trickPlayed"));
 
-      if (highestTrickPlayer == 6) {
-        if (tricks.size() == 1) {
-          // Undealt card is not captured, so push it back to undealt cards list
-          undealtCards.add(tricks.get(0).get("trickPlayed") + suit);
-        } else {
-          // undealt card captures the suit, so award to next highest player
-          highestTrickPlayer = Integer.valueOf(String.valueOf(tricks.get(1).get("player")));
-          highestTrick = String.valueOf(tricks.get(1).get("trickPlayed"));
+      if (gameType.equals("Anarchy")) {
+        if (highestTrickPlayer == 6) {
+          if (tricks.size() == 1) {
+            // Undealt card is not captured, so push it back to undealt cards list
+            undealtCards.add(tricks.get(0).get("trickPlayed") + suit);
+          } else {
+            // undealt card captures the suit, so award to next highest player
+            highestTrickPlayer = Integer.valueOf(String.valueOf(tricks.get(1).get("player")));
+            highestTrick = String.valueOf(tricks.get(1).get("trickPlayed"));
 
-          capturedCards.get(highestTrickPlayer).addAll(tricks);
+            roundCapturedCards.get(highestTrickPlayer).addAll(tricks);
+          }
+        } else {
+          roundCapturedCards.get(highestTrickPlayer).addAll(tricks);
         }
       } else {
-        capturedCards.get(highestTrickPlayer).addAll(tricks);
+        // Anarchist bomb
+        if (tricks.size() == 1) {
+          // Card is a singleton(only one in its suit)
+          singleTons.add(tricks.get(0));
+        } else {
+          roundCapturedCards.get(highestTrickPlayer).addAll(tricks);
+        }
       }
       System.out.println("Player " + highestTrickPlayer + " captures " + suit + " Suit Played with a " + highestTrick);
     });
+    // Deal with singletons
+    if (singleTons.size() > 0) {
+      if (singleTons.size() == 1) {
+        // If there's only one singleton, let it capture itself
+        roundCapturedCards.get(singleTons.get(0).get("player")).add(singleTons.get(0));
+      } else {
+        sortTricks(singleTons);
+
+        // If bomb has been thrown, reverse the capturing order
+        if (bombThrown) {
+          Collections.reverse(singleTons);
+        }
+
+        // If the highest singletons are equal, each singleton captures itself
+        if (getRank(String.valueOf(singleTons.get(0).get("trickPlayed"))) == getRank(String.valueOf(singleTons.get(1).get("trickPlayed")))) {
+          singleTons.forEach(singleTon -> {
+            var singletonPlayer = Integer.valueOf(String.valueOf(singleTon.get("player")));
+            roundCapturedCards.get(singletonPlayer).add(singleTon);
+          });
+        } else {
+          var highestSingletonPlayer = Integer.valueOf(String.valueOf(singleTons.get(0).get("player")));
+          roundCapturedCards.get(highestSingletonPlayer).addAll(singleTons);
+        }
+      }
+    }
+
+    // Add roundCapturedCards to the map of capturedCards
+    capturedCards.put(round, roundCapturedCards);
   }
 
-  public void calculateScores() {
+  private void sortTricks(List<Map<String, Object>> tricks) {
+    Collections.sort(tricks, new Comparator<Map<String, Object>>() {
+      @Override
+      public int compare(Map<String, Object> m1, Map<String, Object> m2) {
+        int rank = 0;
+        String value = "";
+        var m1Rank = getRank((String) m1.get("trickPlayed"));
+        var m2Rank = getRank((String) m2.get("trickPlayed"));
+        return m2Rank.compareTo(m1Rank);
+      }
+    });
+  }
+
+  private List<Map<String, Object>> getPlayerCapturedCards(int playerId) {
+    List<Map<String, Object>> playerCapturedCards = new ArrayList<>();
+    for (Map.Entry<Integer, Map<Integer, List<Map<String, Object>>>> key: capturedCards.entrySet()) {
+      System.out.println(key.getValue().get(playerId));
+      playerCapturedCards.addAll(key.getValue().get(playerId));
+    }
+
+    return playerCapturedCards;
+  }
+
+
+  public void calculateScores(String gameType) {
     int winner = 1;
     int maxScore = 0;
-    for (int i = 1; i < 6; i += 1) {
+    int playersCount = 5;
+
+    if (gameType.equals("Anarchist Bomb")) {
+      playersCount = 4;
+    }
+    for (int i = 1; i < playersCount + 1; i += 1) {
       int total = 0;
-      var playerCapturedCards = capturedCards.get(i);
-      var playerBid = playersBids.get(i);
-      if (playerBid == Bid.NO_SUIT.name()) {
+      var playerCapturedCards = getPlayerCapturedCards(i);
+      var playerBid = playersBids.get(i).toUpperCase();
+      if (playerBid.equals(Bid.NO_SUIT.name()) || playerBid.equals(Bid.CARDS.name())) {
         total = playerCapturedCards.size();
-        if (total > maxScore) {
-          maxScore = total;
-          winner = i;
-        }
-        scores.put(i, total);
-      } else if (playerBid == Bid.MISERE.name()) {
+      } else if (playerBid.equals(Bid.MISERE.name())) {
         for (var card : playerCapturedCards) {
           if (getRank((String) card.get("trickPlayed")) < 10) {
             total += 1;
           }
         }
-        if (total > maxScore) {
-          maxScore = total;
-          winner = i;
-        }
-        scores.put(i, total);
-      } else {
+      } else if (playerBid.equals(Bid.RED.name())) {
         for (var card : playerCapturedCards) {
-          if (card.get("suit").equals(playerBid)) {
+          if (card.get("suit").equals("H") || card.get("suit").equals("D")) {
             total += 2;
           }
         }
-        if (total > maxScore) {
-          maxScore = total;
-          winner = i;
+      } else if (playerBid.equals(Bid.BLACK.name())) {
+        for (var card : playerCapturedCards) {
+          if (card.get("suit").equals("C") || card.get("suit").equals("S")) {
+            total += 2;
+          }
         }
-        scores.put(i, total);
+      } else if (playerBid.equals(Bid.BEST.name())) {
+        HashMap<String, Integer> cardCount = new HashMap<>();
+
+        // Count how many of each card have been captured
+        for (var card : playerCapturedCards) {
+          String suit = (String) card.get("suit");
+          if (cardCount.containsKey(suit)) {
+            int currentCount = cardCount.get(suit);
+            cardCount.put(suit, currentCount + 1);
+          } else {
+            cardCount.put(suit, 1);
+          }
+        }
+
+        // Get which has the highest count
+        int highestValue = 0;
+        for (int value : cardCount.values()) {
+          if (value > highestValue) {
+            highestValue = value;
+          }
+        }
+
+        total = 3 * highestValue;
+
+      } else if (playerBid.equals(Bid.OVERS.name())) {
+        int totalCapturedCards = playerCapturedCards.size();
+        int difference = totalCapturedCards - 13;
+        if (difference > 0) {
+          total = difference * 5;
+        }
+      } else if (playerBid.equals(Bid.UNDERS.name())) {
+        int totalCapturedCards = playerCapturedCards.size();
+        int difference = 13 - totalCapturedCards;
+        if (difference > 0) {
+          total = difference * 5;
+        }
       }
+      else {
+        int pointsPerCapturedCard = 2;
+        if (gameType.equals("Anarchist Bomb")) {
+          pointsPerCapturedCard = 4;
+        }
+        for (var card : playerCapturedCards) {
+          if (getFullSuit((String) card.get("suit")).equals(playerBid)) {
+            total += pointsPerCapturedCard;
+          }
+        }
+      }
+      // Store scores and compute winner
+      if (total > maxScore) {
+        maxScore = total;
+        winner = i;
+      }
+      scores.put(i, total);
     }
-    System.out.println(scores);
-    if (maxScore == 0) {
-      System.out.println(BLUE+"This round is not won by any player");
-    } else{
-      System.out.println(BLUE+"This round is won by player " + winner + " with " + maxScore + " points");
-    }
-    System.out.println(RESET+"------------------------------------------------------------------------");
 
-    Scanner keyboard = new Scanner(System.in);
-    System.out.println("Play again? y/n");
-    String playAgainResponse = keyboard.nextLine();
-
-    while (!playAgainResponse.equals("y") && !playAgainResponse.equals("n")) {
-      System.out.println(RED+"Invalid response. Read the prompt again");
-      System.out.println(RESET+"Play again? y/n");
-      playAgainResponse = keyboard.nextLine();
-    }
-
-    if (playAgainResponse.equals("y")) {
-      try {
-        run();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }}
+//    Scanner keyboard = new Scanner(System.in);
+//    System.out.println("Play again? y/n");
+//    String playAgainResponse = keyboard.nextLine();
+//
+//    while (!playAgainResponse.equals("y") && !playAgainResponse.equals("n")) {
+//      System.out.println(RED+"Invalid response. Read the prompt again");
+//      System.out.println(RESET+"Play again? y/n");
+//      playAgainResponse = keyboard.nextLine();
+//    }
+//
+//    if (playAgainResponse.equals("y")) {
+//      try {
+//        run();
+//      } catch (Exception e) {
+//        throw new RuntimeException(e);
+//      }}
 
   }
 
@@ -288,30 +400,48 @@ public class CardDistribution {
     System.out.println("Played tricks: "+playedTricks);
   }
 
-  public List<List<String>> dealCardsToPlayers() {
-    int remainingCards = deck.size() % 5;
-    for (int i = 0; i < 5; i++) {
+  public List<List<String>> dealCardsToPlayers(int numberOfPlayersPlaying) {
+    int remainingCards = deck.size() % numberOfPlayersPlaying;
+    for (int i = 0; i < numberOfPlayersPlaying; i++) {
       dealtCards.add(new ArrayList<>());
     }
 
     for (int i = 0; i < deck.size(); i++) {
       if (i < deck.size() - remainingCards) {
-        int personIndex = i % 5;
+        int personIndex = i % numberOfPlayersPlaying;
         dealtCards.get(personIndex).add(deck.get(i));
       } else {
         undealtCards.add(deck.get(i));
       }
     }
 
+//    dealtCards.get(1).add("Joker");
+
+    // Handle when the joker is the odd card
+    if (undealtCards.get(0).equals("Joker")) {
+      // Remove last card dealt to dealer and replace it with the joker
+      List<String> dealerDealtCards = dealtCards.get(0);
+      String lastDealtCard = dealerDealtCards.remove(dealerDealtCards.size() - 1);
+      String joker = undealtCards.remove(0);
+
+      dealtCards.get(0).add(joker);
+      undealtCards.add(lastDealtCard);
+    }
+
     return dealtCards;
   }
 
-  public List<String> GenerateCardDeck() {
+  public List<String> GenerateCardDeck(String gameType) {
     for (Suit suit : Suit.values()) {
       for (Rank rank : Rank.values()) {
         var rankId = rank.getName() == "10" ? rank.getName() : rank.getName().charAt(0);
         deck.add(String.valueOf(rankId  +""+ suit.getName().charAt(0)));
       }
+    }
+
+    if (gameType.equals("Anarchist Bomb")) {
+      // Add joker to the deck
+      deck.add("Joker");
     }
 
     return deck;

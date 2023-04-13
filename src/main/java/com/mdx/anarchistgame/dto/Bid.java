@@ -1,10 +1,16 @@
 package com.mdx.anarchistgame.dto;
 
-public enum Bid{
+public enum Bid {
     MISERE,
     NO_SUIT,
     SPADES,
     CLUBS,
     HEARTS,
-    DIAMONDS
+    DIAMONDS,
+    CARDS,
+    BEST,
+    UNDERS,
+    OVERS,
+    RED,
+    BLACK
 }
