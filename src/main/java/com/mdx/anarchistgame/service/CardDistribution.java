@@ -200,10 +200,10 @@ public class CardDistribution {
       if (playerBid.equals(Bid.NO_SUIT.name()) || playerBid.equals(Bid.CARDS.name())) {
         total = playerCapturedCards.size();
       } else if (playerBid.equals(Bid.MISERE.name())) {
-        for (var card : playerCapturedCards) {
-          if (getRank((String) card.get("trickPlayed")) < 10) {
-            total += 1;
-          }
+        int totalCapturedCards = playerCapturedCards.size();
+        int difference = 10 - totalCapturedCards;
+        if (difference > 0) {
+          total = difference;
         }
       } else if (playerBid.equals(Bid.RED.name())) {
         for (var card : playerCapturedCards) {
