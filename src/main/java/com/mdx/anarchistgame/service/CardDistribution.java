@@ -36,8 +36,12 @@ public class CardDistribution implements CommandLineRunner {
     //TODO: Players Annouces their Bid
     playersAnnouncesBid();  // Amos
 
-    for (int k = 0; k < 1; k += 1) {
-      playTrick(); // Zeeshan
+    for (int k = 0; k < 2; k += 1) {
+      var topmostUndealtCard = undealtCards.size() !=0 ? undealtCards.get(undealtCards.size()-1) :"No Undealt Card" ;
+      System.out.println(YELLOW+" Topmost undealt card: "+topmostUndealtCard);
+      System.out.println(RESET+" ==============|||||||||||||||||||||||||||===================");
+
+      playTrick(topmostUndealtCard); // Zeeshan
 
       Map<String, List<Map<String, Object>>> newObj = new HashMap<>();
       for (Map.Entry<Integer, String> entry : playedTricks.entrySet()) {
@@ -87,11 +91,22 @@ public class CardDistribution implements CommandLineRunner {
         System.out.println("Tricks = " + tricks);
         var highestTrickPlayer = Integer.valueOf(String.valueOf(tricks.get(0).get("player")));
         var highestTrick = String.valueOf(tricks.get(0).get("trickPlayed"));
-        capturedCards.get(highestTrickPlayer).addAll(tricks);
-        System.out.println("Player " + highestTrickPlayer + " captures " + suit + " Suit Played with a " + highestTrick);
+        if (highestTrickPlayer == 6  && tricks.size()>1){
+          highestTrickPlayer = Integer.valueOf(String.valueOf(tricks.get(1).get("player")));
+          highestTrick = String.valueOf(tricks.get(1).get("trickPlayed"));
+          undealtCards.remove(undealtCards.size()-1);
+        }
+        if (highestTrickPlayer != 6) {
+          capturedCards.get(highestTrickPlayer).addAll(tricks);
+//          tricks.forEach(trick -> trick.get(suit));
+          System.out.println("Player " + highestTrickPlayer + " captures " + suit + " Suit Played with a " + highestTrick);
+        }
       });
     }
     System.out.println(capturedCards);
+    System.out.println("=======================================");
+    System.out.println("PLAYER's BID: "+playersBids);
+    System.out.println("=======================================");
     calculateScores();
   }
 
@@ -244,7 +259,7 @@ public class CardDistribution implements CommandLineRunner {
     }
   }
 
-  private void playTrick() {
+  private void playTrick(String topUndealtCard) {
     for (int i = 0; i < 5; i++) {
       System.out.println(GREEN+"HAND: "+ dealtCards.get(i));
       Scanner keyboard = new Scanner(System.in);
@@ -252,6 +267,7 @@ public class CardDistribution implements CommandLineRunner {
       String cardSelected = "";
 
       do {
+        System.out.println(GREEN+" Your BID is "+playersBids.get(i+1));
         System.out.println(GREEN+" Player "+ (i+1) +" Play a trick from your hand");
         cardSelected = keyboard.nextLine();
         indexOfTrick = dealtCards.get(i).indexOf(cardSelected.toUpperCase());
@@ -265,7 +281,9 @@ public class CardDistribution implements CommandLineRunner {
 //      Remove the played trick
       dealtCards.get(i).remove(indexOfTrick);
       System.out.println("Cards Left: "+ dealtCards.get(i));
+      System.out.println("======[][][][][]][[[][][][][[][][][][][][[[][][[][][][]][[][]][[][][]=====");
     }
+    playedTricks.put(6,topUndealtCard);
     System.out.println("Played tricks: "+playedTricks);
   }
 
@@ -288,7 +306,7 @@ public class CardDistribution implements CommandLineRunner {
   private void GenerateCardDeck() {
     for (Suit suit : Suit.values()) {
       for (Rank rank : Rank.values()) {
-        deck.add(String.valueOf(rank.getName().charAt(0)  +""+ suit.getName().charAt(0)));
+        deck.add(rank.getName().charAt(0)  +""+ suit.getName().charAt(0));
       }
     }
   }

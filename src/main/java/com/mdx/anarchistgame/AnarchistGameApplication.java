@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class AnarchistGameApplication {
 
     public static void main(String[] args) {
+        var amos = "AMOS ".matches("^([0-9]+\\.?[0-9]*|\\.[0-9]+)$");
         SpringApplication.run(AnarchistGameApplication.class, args);
     }
 
